@@ -7,6 +7,7 @@ oś Y rośnie w dół (tak jak w większości bibliotek graficznych).
 from PySide6.QtCore import QPointF, Qt, Signal
 from PySide6.QtGui import QColor, QPainter, QPen
 from PySide6.QtWidgets import QGraphicsScene, QGraphicsView
+from obiekt import utworz_obiekt
 
 ROZMIAR_SIATKI = 50          # odległość między liniami siatki (w jednostkach sceny)
 ROZMIAR_SCENY = 4000         # scena ma wymiary 4000 x 4000, od -2000 do +2000
@@ -81,6 +82,7 @@ class MapView(QGraphicsView):
         self.setDragMode(QGraphicsView.NoDrag)
         self._zoom = 1.0
         self._przesuwanie = False
+        self.aktywny_obiekt = None   # nazwa z palety albo None, moze zmienimy na jakies rezerwowe ksztalty czy cos
 
     # ----- Zoom -----
     def wheelEvent(self, event):
@@ -114,7 +116,23 @@ class MapView(QGraphicsView):
             self.setCursor(Qt.ClosedHandCursor)
             event.accept()
             return
+
+
+    #akcja LMB, dodawanie itd
+        if event.button() == Qt.LeftButton and self.aktywny_obiekt:
+            poz = self.mapToScene(event.position().toPoint())
+            item = utworz_obiekt(self.aktywny_obiekt)
+            item.setPos(poz)
+            self.scene().addItem(item)
+            event.accept()
+            return
+
         super().mousePressEvent(event)
+
+
+    def ustaw_aktywny_obiekt(self, nazwa):
+        self.aktywny_obiekt = nazwa if nazwa else None                            # zapamiętuje wybraną pozycję z palety
+        self.setCursor(Qt.CrossCursor if self.aktywny_obiekt else Qt.ArrowCursor) # zmienia kursor (krzyżyk albo strzałka)
 
     def mouseMoveEvent(self, event):
         if self._przesuwanie:
@@ -132,7 +150,20 @@ class MapView(QGraphicsView):
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.MiddleButton and self._przesuwanie:
             self._przesuwanie = False
-            self.unsetCursor()
+            # self.unsetCursor()
+            self.ustaw_aktywny_obiekt(self.aktywny_obiekt)
             event.accept()
             return
         super().mouseReleaseEvent(event)
+
+    def keyPressEvent(self, event):
+        #usuwanie Delete-key
+        if event.key() in (Qt.Key_Delete, Qt.Key_Backspace):
+            for item in self.scene().selectedItems():
+                self.scene().removeItem(item)
+            event.accept()
+            return
+        super().keyPressEvent(event)
+
+
+

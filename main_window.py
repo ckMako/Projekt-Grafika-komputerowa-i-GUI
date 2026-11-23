@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (
 from canvas import MapScene, MapView
 
 # Obiekty z palety (na razie tylko nazwy, w kolejnym etapie dojdą klasy i grafiki)
-OBIEKTY_PALETY = ["Drzewo", "Skrzynia", "Kamień", "Domek", "Woda"]
+OBIEKTY_PALETY = ["Drzewo", "Skrzynia", "Kamień", "Domek", "Woda", "Ziemia"]
 
 
 class MainWindow(QMainWindow):
@@ -70,6 +70,12 @@ class MainWindow(QMainWindow):
         self.akcja_o_programie = QAction("O programie", self)
         self.akcja_o_programie.triggered.connect(self._o_programie)
 
+    #akcja esc
+        self.akcja_anuluj = QAction("Anuluj narzędzie", self)
+        self.akcja_anuluj.setShortcut(QKeySequence(Qt.Key_Escape)) #klawisz esc
+        self.akcja_anuluj.triggered.connect(self._anuluj_narzedzie)
+        self.addAction(self.akcja_anuluj)   # skrót działa, mimo że akcji nie ma w menu
+
     def _utworz_menu(self):
         menu_plik = self.menuBar().addMenu("&Plik")
         menu_plik.addAction(self.akcja_nowy)
@@ -98,8 +104,12 @@ class MainWindow(QMainWindow):
     # ------------------------------------------------------------------
     def _utworz_panel_obiektow(self):
         """Lewy panel z paletą obiektów (na razie sama lista, bez działania)."""
+
         self.lista_obiektow = QListWidget()
         self.lista_obiektow.addItems(OBIEKTY_PALETY)
+
+       # gdy zmieni się wybrana pozycja na liście, powiadom widok o nazwie obiektu
+        self.lista_obiektow.currentTextChanged.connect(self.widok.ustaw_aktywny_obiekt)
 
         panel = QDockWidget("Obiekty", self)
         panel.setWidget(self.lista_obiektow)
@@ -163,3 +173,14 @@ class MainWindow(QMainWindow):
             "Edytor map 2D\nProjekt z przedmiotu Grafika Komputerowa i GUI.\n"
             "Python + PySide6 (Qt).",
         )
+
+
+
+    def _anuluj_narzedzie(self):
+        """Wyłącza narzędzie z palety (wywoływane klawiszem Esc)."""
+        # zdejmij podświetlenie z pozycji na liście
+        self.lista_obiektow.clearSelection()
+        # brak bieżącej pozycji (-1), co wysyła sygnał currentTextChanged z pustym tekstem
+        self.lista_obiektow.setCurrentRow(-1)
+        # widok przestaje stawiać obiekty, a lewy klik znów zaznacza i przesuwa
+        self.widok.ustaw_aktywny_obiekt(None)
